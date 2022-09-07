@@ -1,7 +1,9 @@
 package ua.cn.stu.room.model.accounts.room.entities
 
-import androidx.room.ColumnInfo
-import androidx.room.PrimaryKey
+import androidx.room.*
+import ua.cn.stu.room.model.boxes.room.entities.AccountBoxSettingDbEntity
+import ua.cn.stu.room.model.boxes.room.entities.BoxDbEntity
+import ua.cn.stu.room.model.boxes.room.views.SettingDbView
 
 data class AccountSignInTuple(
     @ColumnInfo(name = "id") val id: Long,
@@ -13,12 +15,42 @@ data class AccountUpdateUsernameTuple(
     @ColumnInfo(name = "username") val username: String
 )
 
-// todo #17: Create an AccountAndEditedBoxesTuple class which joins queries all boxes which settings have
-//           been edited for the specified account.
-//           Hint: use @Relation annotation with 'associateBy' argument.
+data class AccountAndEditedBoxesTuple(
+    @Embedded val accountDbEntity: AccountDbEntity,
 
-// todo #19: Create an AccountAndAllSettingsTuple + SettingAndBoxTuple classes (hint: both of them with
-//           @Relation annotation). AccountAndAllSettingsTuple should fetch account data from 'accounts'
-//           table and also should contain a reference to the SettingAndBoxTuple. The latter should
-//           contain data from 'SettingDbView' ('is_active' flag) and also it should contain a reference
-//           to the BoxDbEntity (data from 'boxes' table).
+    @Relation(
+        parentColumn = "id",
+        entityColumn = "id",
+        associateBy = Junction(
+            value = AccountBoxSettingDbEntity::class,
+            parentColumn = "account_id",
+            entityColumn = "box_id"
+        )
+    )
+    val boxes :List<BoxDbEntity>
+)
+
+/**
+ * Tuple for querying account data + settings for all boxes + boxes data
+ */
+data class AccountAndAllSettingsTuple(
+    @Embedded val accountDbEntity: AccountDbEntity,
+    @Relation(
+        parentColumn = "id",
+        entityColumn = "account_id",
+        entity = SettingDbView::class
+    )
+    val settings: List<SettingAndBoxTuple>
+)
+
+/**
+ * Helper tuple class for [AccountAndAllSettingsTuple] with nested relation.
+ */
+data class SettingAndBoxTuple(
+    @Embedded val accountBoxSettingsDbEntity: SettingDbView,
+    @Relation(
+        parentColumn = "box_id",
+        entityColumn = "id"
+    )
+    val boxDbEntity: BoxDbEntity
+)

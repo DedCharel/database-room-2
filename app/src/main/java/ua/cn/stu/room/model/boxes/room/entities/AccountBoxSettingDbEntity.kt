@@ -1,9 +1,6 @@
 package ua.cn.stu.room.model.boxes.room.entities
 
-import androidx.room.ColumnInfo
-import androidx.room.Entity
-import androidx.room.ForeignKey
-import androidx.room.Index
+import androidx.room.*
 import ua.cn.stu.room.model.accounts.room.entities.AccountDbEntity
 
 @Entity(
@@ -32,6 +29,5 @@ import ua.cn.stu.room.model.accounts.room.entities.AccountDbEntity
 data class AccountBoxSettingDbEntity(
     @ColumnInfo(name = "account_id") val accountId: Long,
     @ColumnInfo(name = "box_id") val boxId: Long,
-    // todo #2: replace 'isActive' property by the embedded SettingsTuple class created before
-    @ColumnInfo(name = "is_active") val isActive: Boolean
+    @Embedded val settings: SettingsTuple
 )

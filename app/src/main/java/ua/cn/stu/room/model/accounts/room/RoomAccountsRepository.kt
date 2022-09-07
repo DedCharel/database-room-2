@@ -14,6 +14,7 @@ import ua.cn.stu.room.model.accounts.entities.AccountFullData
 import ua.cn.stu.room.model.accounts.entities.SignUpData
 import ua.cn.stu.room.model.accounts.room.entities.AccountDbEntity
 import ua.cn.stu.room.model.accounts.room.entities.AccountUpdateUsernameTuple
+import ua.cn.stu.room.model.boxes.entities.BoxAndSettings
 import ua.cn.stu.room.model.room.wrapSQLiteException
 import ua.cn.stu.room.model.settings.AppSettings
 import ua.cn.stu.room.utils.AsyncLoader
@@ -82,9 +83,23 @@ class RoomAccountsRepository(
     }
 
     override suspend fun getAllData(): Flow<List<AccountFullData>> {
-        // todo #21: fetch all data from the database and convert it to AccountFullData for usage
-        //           in view-models and fragments.
-        return flowOf(emptyList())
+        val account = getAccount().first()
+        if (account == null || !account.isAdmin()) throw AuthException()
+
+        return accountsDao.getAllData()
+            .map { accountsAndSettings ->
+                accountsAndSettings.map { accountAndSettingsTuple ->
+                    AccountFullData(
+                        account = accountAndSettingsTuple.accountDbEntity.toAccount(),
+                        boxesAndSettings = accountAndSettingsTuple.settings.map {
+                            BoxAndSettings(
+                                box = it.boxDbEntity.toBox(),
+                                isActive = it.accountBoxSettingsDbEntity.settings.isActive
+                            )
+                        }
+                    )
+                }
+            }
     }
 
     private suspend fun findAccountIdByEmailAndPassword(email: String, password: CharArray): Long {

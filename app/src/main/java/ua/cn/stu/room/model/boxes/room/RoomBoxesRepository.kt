@@ -1,5 +1,6 @@
 package ua.cn.stu.room.model.boxes.room
 
+import android.graphics.Color
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.flow.*
 import ua.cn.stu.room.model.AuthException
@@ -8,6 +9,7 @@ import ua.cn.stu.room.model.boxes.BoxesRepository
 import ua.cn.stu.room.model.boxes.entities.Box
 import ua.cn.stu.room.model.boxes.entities.BoxAndSettings
 import ua.cn.stu.room.model.boxes.room.entities.AccountBoxSettingDbEntity
+import ua.cn.stu.room.model.boxes.room.entities.SettingsTuple
 import ua.cn.stu.room.model.room.wrapSQLiteException
 
 class RoomBoxesRepository(
@@ -43,21 +45,16 @@ class RoomBoxesRepository(
         return boxesDao.getBoxesAndSettings(accountId)
             .map { entities ->
                 entities.map {
-                    // todo #7: use embedded entities instead of keys and values;
-                    //          now launch the project and check how it works.
-                    val boxEntity = it.key
-                    val settingsEntity = it.value
-                    // todo #3: use embedded entity instead of isActive property
-                    BoxAndSettings(boxEntity.toBox(), settingsEntity == null || settingsEntity.isActive)
+                    val boxEntity = it.boxDbEntity
+                    val settingsEntity = it.settingDbEntity
+                    BoxAndSettings(
+                        box = boxEntity.toBox(),
+                        isActive = settingsEntity.settings.isActive
+                    )
                 }
             }
     }
 
-    // todo #12: Rewrite queryBoxesAndSettings() method above ^ for usage with database view.
-    //           Uninstall the app from the device, install it again, launch and check all things work correctly.
-
-    // todo #16: Rewrite queryBoxesAndSettings() method above ^ again for usage with SettingWithEntitiesTuple.
-    //           Uninstall the app from the device, install it again, launch and check all things work correctly.
 
     private suspend fun setActiveFlagForBox(box: Box, isActive: Boolean) {
         val account = accountsRepository.getAccount().first() ?: throw AuthException()
@@ -65,8 +62,7 @@ class RoomBoxesRepository(
             AccountBoxSettingDbEntity(
                 accountId = account.id,
                 boxId = box.id,
-                // todo #4: use embedded entity instead of isActive property
-                isActive = isActive
+                settings = SettingsTuple(isActive = isActive)
             )
         )
     }
